@@ -1,0 +1,209 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+
+
+face = plt.imread('example_grayscale.png')
+
+# ako je RGB → pretvori u grayscale
+if len(face.shape) == 3:
+    face = face.mean(axis=2)
+
+# normalizacija (ako je u rasponu 0–1, pretvori u 0–255)
+if face.max() <= 1.0:
+    face = (face * 255).astype(np.uint8)
+
+# =========================
+# 2. PRIPREMA PODATAKA
+# =========================
+X = face.reshape((-1, 1))  # (broj_piksela, 1)
+
+# =========================
+# 3. KMEANS KVANTIZACIJA
+# =========================
+k = 10  # PROMIJENI OVDJE (npr. 2, 5, 10, 20)
+
+k_means = KMeans(n_clusters=k, n_init=10, random_state=0)
+k_means.fit(X)
+
+values = k_means.cluster_centers_.squeeze()
+labels = k_means.labels_
+
+# rekonstrukcija slike
+face_compressed = np.choose(labels, values)
+face_compressed = face_compressed.reshape(face.shape)
+
+# =========================
+# 4. PRIKAZ SLIKA
+# =========================
+plt.figure(figsize=(10, 4))
+
+plt.subplot(1, 2, 1)
+plt.title("Original")
+plt.imshow(face, cmap='gray')
+plt.axis('off')
+
+plt.subplot(1, 2, 2)
+plt.title(f"Kvantizirana (k={k})")
+plt.imshow(face_compressed, cmap='gray')
+plt.axis('off')
+
+plt.tight_layout()
+plt.show()
+
+# =========================
+# 5. IZRAČUN KOMPRESIJE
+# =========================
+N = face.shape[0] * face.shape[1]
+
+original_bits = N * 8  # 8 bita po pikselu
+compressed_bits = N * np.ceil(np.log2(k)) + k * 8  # indeksi + centri
+
+compression_ratio = original_bits / compressed_bits
+
+print("Original veličina (bitova):", int(original_bits))
+print("Kompresirana veličina (bitova):", int(compressed_bits))
+print("Omjer kompresije:", round(compression_ratio, 2), "x")
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+
+# =========================
+# 1. UČITAVANJE SLIKE
+# =========================
+img = plt.imread('example.png')
+
+# ako je slika u rasponu 0–1 → pretvori u 0–255
+if img.max() <= 1.0:
+    img = (img * 255).astype(np.uint8)
+
+# spremi dimenzije
+h, w, c = img.shape   # c bi trebao biti 3 (RGB)
+
+# =========================
+# 2. PRIPREMA PODATAKA
+# =========================
+X = img.reshape((-1, 3))  # svaki piksel = [R, G, B]
+
+# =========================
+# 3. KMEANS KVANTIZACIJA
+# =========================
+k = 10  # promijeni po potrebi (npr. 4, 8, 16, 32)
+
+kmeans = KMeans(n_clusters=k, n_init=10, random_state=0)
+kmeans.fit(X)
+
+colors = kmeans.cluster_centers_.astype(np.uint8)
+labels = kmeans.labels_
+
+# rekonstrukcija slike
+img_quantized = colors[labels]
+img_quantized = img_quantized.reshape((h, w, 3))
+
+# =========================
+# 4. PRIKAZ
+# =========================
+plt.figure(figsize=(10, 5))
+
+plt.subplot(1, 2, 1)
+plt.title("Original")
+plt.imshow(img)
+plt.axis('off')
+
+plt.subplot(1, 2, 2)
+plt.title(f"Kvantizirana (k={k})")
+plt.imshow(img_quantized)
+plt.axis('off')
+
+plt.tight_layout()
+plt.show()
+
+
+from sklearn import datasets
+import numpy as np
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+
+def generate_data(n_samples, flagc):
+    
+    if flagc == 1:
+        random_state = 365
+        X,y = datasets.make_blobs(n_samples=n_samples, random_state=random_state)
+        
+    elif flagc == 2:
+        random_state = 148
+        X,y = datasets.make_blobs(n_samples=n_samples, random_state=random_state)
+        transformation = [[0.60834549, -0.63667341], [-0.40887718, 0.85253229]]
+        X = np.dot(X, transformation)
+        
+    elif flagc == 3:
+        random_state = 148
+        X, y = datasets.make_blobs(n_samples=n_samples,
+                                    centers=4,
+                                    cluster_std=[1.0, 2.5, 0.5, 3.0],
+                                    random_state=random_state)
+
+    elif flagc == 4:
+        X, y = datasets.make_circles(n_samples=n_samples, factor=.5, noise=.05)
+        
+    elif flagc == 5:
+        X, y = datasets.make_moons(n_samples=n_samples, noise=.05)
+    
+    else:
+        X = []
+        
+    return X
+# generiranje podataka
+X = generate_data(500, flagc=1)
+
+# KMeans (npr. 3 klastera)
+kmeans = KMeans(n_clusters=3, n_init=10)
+labels = kmeans.fit_predict(X)
+centers = kmeans.cluster_centers_
+
+# crtanje
+plt.scatter(X[:, 0], X[:, 1], c=labels, cmap='viridis', s=30)
+plt.scatter(centers[:, 0], centers[:, 1], c='red', s=200, marker='X')
+plt.title("KMeans grupiranje")
+plt.show()
+
+
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+
+inertia_values = []
+K_range = range(1, 21)
+
+for k in K_range:
+    kmeans = KMeans(n_clusters=k, n_init=10)
+    kmeans.fit(X)
+    inertia_values.append(kmeans.inertia_)
+
+# crtanje grafa
+plt.plot(K_range, inertia_values, marker='o')
+plt.xlabel("Broj klastera (k)")
+plt.ylabel("Vrijednost kriterijske funkcije (inertia)")
+plt.title("Elbow metoda")
+plt.grid(True)
+plt.show()
+
+import matplotlib.pyplot as plt
+from scipy.cluster.hierarchy import dendrogram, linkage
+
+# isprobaj različite metode
+methods = ['single', 'complete', 'average', 'ward']
+
+plt.figure(figsize=(12, 8))
+
+for i, method in enumerate(methods, 1):
+    plt.subplot(2, 2, i)
+    
+    Z = linkage(X, method=method)
+    dendrogram(Z, no_labels=True)
+    
+    plt.title(f"Metoda: {method}")
+
+plt.tight_layout()
+plt.show()
