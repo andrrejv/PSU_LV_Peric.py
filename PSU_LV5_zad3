@@ -1,0 +1,90 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score
+
+# Učitavanje podataka
+df = pd.read_csv('occupancy_processed.csv')
+
+feature_names = ['S3_Temp', 'S5_CO2']
+target_name = 'Room_Occupancy_Count'
+class_names = ['Slobodna', 'Zauzeta']
+
+X = df[feature_names].to_numpy()
+y = df[target_name].to_numpy()
+
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+
+# Vizualizacija
+plt.figure()
+for class_value in np.unique(y):
+    mask = y == class_value
+    plt.scatter(X[mask, 0], X[mask, 1], label=class_names[class_value])
+
+print(df[target_name].value_counts())
+print(len(df))
+
+plt.xlabel('S3_Temp')
+plt.ylabel('S5_CO2')
+plt.title('Zauzetost prostorije')
+plt.legend()
+plt.show()
+
+
+#skal
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+
+# Podjela podataka
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+# Model (Decision Tree)
+dt = DecisionTreeClassifier(random_state=42)
+dt.fit(X_train, y_train)
+
+# Evaluacija
+y_pred = dt.predict(X_test)
+
+# Matrica zabune
+cm = confusion_matrix(y_test, y_pred)
+print("\nMatrica zabune:\n", cm)
+
+# Točnost
+accuracy = accuracy_score(y_test, y_pred)
+print("\nTočnost:", accuracy)
+
+# Preciznost i odziv
+precision = precision_score(y_test, y_pred, average=None)
+recall = recall_score(y_test, y_pred, average=None)
+
+for i in range(len(class_names)):
+    print(f"\nKlasa {class_names[i]}:")
+    print(f"  Preciznost: {precision[i]}")
+    print(f"  Odziv: {recall[i]}")
+
+# Utjecaj dubine stabla (umjesto k kod KNN)
+print("\nUtjecaj max_depth:")
+for depth in [1, 3, 5, 10, None]:
+    dt = DecisionTreeClassifier(max_depth=depth, random_state=42)
+    dt.fit(X_train, y_train)
+    y_pred_d = dt.predict(X_test)
+    acc = accuracy_score(y_test, y_pred_d)
+    print(f"max_depth={depth}, točnost={acc}")
+
+# Vizualizacija stabla
+plt.figure(figsize=(10, 6))
+plot_tree(dt, feature_names=feature_names, class_names=class_names, filled=True)
+plt.title("Decision Tree")
+plt.show()
